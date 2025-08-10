@@ -28,4 +28,7 @@ You'll also need a slack bot token (obtained by creating a new app) and a Discor
 
 Navigating to localhost:5008 will greet you with an interface to send the cross-platform messages.
 
+## How it Works
+The Slack API is contained in the daniel-slack folder. It has the /send-slack endpoint, which is called in main.py's /send endpoint. While this is definetly NOT the optimal way to do this, it works.
+
 ![](https://hc-cdn.hel1.your-objectstorage.com/s/v3/084786d7d3d1cc4e10f1b2cf1d5714d5923d8756_image.png)
