@@ -4,21 +4,98 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>daniel</title>
+    <style>
+        body {
+            background: #181818;
+            color: #f0f0f0;
+            font-family: Consolas, 'Courier New', monospace;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 480px;
+            margin: 40px auto;
+            padding: 24px;
+            background: #222;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: normal;
+            margin-bottom: 32px;
+            color: #fafafa;
+            letter-spacing: 2px;
+        }
+        label {
+            display: block;
+            margin-top: 18px;
+            margin-bottom: 6px;
+            font-size: 1rem;
+        }
+        .input-field, textarea, select {
+            width: 100%;
+            background: #181818;
+            color: #f0f0f0;
+            border: 1px solid #444;
+            border-radius: 4px;
+            font-family: inherit;
+            font-size: 1rem;
+            padding: 8px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        textarea {
+            min-height: 70px;
+            resize: vertical;
+        }
+        button {
+            background: #282828;
+            color: #f0f0f0;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 10px 18px;
+            font-family: inherit;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 8px;
+            width: 100%;
+        }
+        button:hover {
+            background: #333;
+        }
+        .response {
+            margin-top: 18px;
+            background: #141414;
+            color: #c5e1a5;
+            padding: 10px;
+            border-radius: 4px;
+            min-height: 32px;
+            font-size: 1rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+            border: 1px solid #444;
+        }
+        select:focus, textarea:focus, input:focus, button:focus {
+            outline: 1px solid #666;
+        }
+    </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>JARVIS! meet daniel</h1>
+        <h1>daniel...</h1>
 
-        <label for="server_select">Select Server:</label>
+        <label for="server_select">select server:</label>
         <select id="server_select" class="input-field">
-            <option value="">-- Select a server --</option>
+            <option value="">-- select a server --</option>
         </select>
 
-        <label for="message">Message:</label>
-        <textarea id="message" class="input-field" placeholder="Enter message" rows="4"></textarea>
+        <label for="message">message:</label>
+        <textarea id="message" class="input-field" placeholder="enter message" rows="4"></textarea>
 
-        <button onclick="sendMessage()">Send Message</button>
+        <button onclick="sendMessage()">send</button>
 
         <div id="response" class="response"></div>
     </div>
