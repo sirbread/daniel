@@ -4,7 +4,8 @@ from discord import app_commands
 import asyncio
 import json
 from dotenv import load_dotenv
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS 
 import threading
 
 load_dotenv()
@@ -102,6 +103,11 @@ async def bindhere(interaction: discord.Interaction):
 
 #doesn't this like hold water why is it in my code
 app = Flask(__name__)
+CORS(app)
+
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 @app.route("/send", methods=["POST"])
 def send_message():

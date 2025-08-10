@@ -1,9 +1,7 @@
 # daniel
 
 ## todo
-### client (site)
-- recive messages 
-- push messages
+- replace slop machine site asap
 ### workflow right now
 1. user adds bot
 2. admin binds bot to channel
