@@ -1,7 +1,9 @@
+import os
 import discord
 import asyncio
-
-token = "i-love-macaroni"
+from dotenv import load_dotenv
+load_dotenv()
+token = os.getenv("DISCORD_TOKEN")
 
 intents = discord.Intents.default()
 intents.guilds = True
