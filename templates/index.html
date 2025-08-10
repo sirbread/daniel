@@ -4,15 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>daniel</title>
-
 </head>
 <body>
 
     <div class="container">
         <h1>JARVIS! meet daniel</h1>
-        <label for="guild_id">guild id (find in /servers):</label>
-        <input type="text" id="guild_id" class="input-field" placeholder="guild id here">
-        
+
+        <label for="server_select">Select Server:</label>
+        <select id="server_select" class="input-field">
+            <option value="">-- Select a server --</option>
+        </select>
+
         <label for="message">Message:</label>
         <textarea id="message" class="input-field" placeholder="Enter message" rows="4"></textarea>
 
@@ -22,12 +24,33 @@
     </div>
 
     <script>
+        window.onload = function() {
+            fetchServers();
+        }
+
+        function fetchServers() {
+            fetch('http://localhost:5008/servers')
+                .then(response => response.json())
+                .then(servers => {
+                    const serverSelect = document.getElementById("server_select");
+                    servers.forEach(server => {
+                        const option = document.createElement("option");
+                        option.value = server.id;
+                        option.textContent = server.name;
+                        serverSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching servers:', error);
+                });
+        }
+
         function sendMessage() {
-            const guildId = document.getElementById("guild_id").value;
+            const guildId = document.getElementById("server_select").value;
             const message = document.getElementById("message").value;
             
             if (!guildId || !message) {
-                alert("enter both guildid and message idiot");
+                alert("where u sending to?? select server pls");
                 return;
             }
 
@@ -43,11 +66,11 @@
             })
             .then(response => response.json())
             .then(data => {
-                document.getElementById("response").textContent = `status: ${data.status || 'cooked'}`;
+                document.getElementById("response").textContent = `status: ${data.status || 'message sent'}`;
             })
             .catch(error => {
                 console.error('Error:', error);
-                document.getElementById("response").textContent = 'message felt sick today';
+                document.getElementById("response").textContent = 'message failed ot send';
             });
         }
     </script>

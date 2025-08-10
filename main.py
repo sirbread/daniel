@@ -14,11 +14,18 @@ token = os.getenv("DISCORD_TOKEN")
 BINDINGS_FILE = "bindings.json"
 slack_api_url = "http://localhost:5009/send-slack"
 
-if os.path.exists(BINDINGS_FILE):
-    with open(BINDINGS_FILE, "r") as f:
-        bindings = json.load(f)
-else:
-    bindings = {}
+def load_bindings():
+    if os.path.exists(BINDINGS_FILE):
+        with open(BINDINGS_FILE, "r") as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                return {}
+    return {}
+
+def save_bindings(bindings):
+    with open(BINDINGS_FILE, "w") as f:
+        json.dump(bindings, f)
 
 intents = discord.Intents.default()
 intents.guilds = True
@@ -34,6 +41,7 @@ class MyClient(discord.Client):
         await self.tree.sync()
 
     async def send_to_bound_channels(self, message):
+        bindings = load_bindings()
         for guild in self.guilds:
             if str(guild.id) in bindings:
                 channel_id = bindings[str(guild.id)]
@@ -45,6 +53,7 @@ class MyClient(discord.Client):
                         pass
 
     async def send_to_bound_channel(self, guild_id, message):
+        bindings = load_bindings()
         guild = self.get_guild(int(guild_id))
         if not guild:
             return False
@@ -58,6 +67,7 @@ class MyClient(discord.Client):
         return True
 
     def list_servers(self):
+        bindings = load_bindings()
         return [
             {
                 "id": str(g.id),
@@ -81,9 +91,9 @@ async def bind(interaction: discord.Interaction, channel_id: str):
         if not channel:
             await interaction.response.send_message("lol channel not found", ephemeral=True)
             return
+        bindings = load_bindings()
         bindings[str(interaction.guild.id)] = channel_id
-        with open(BINDINGS_FILE, "w") as f:
-            json.dump(bindings, f)
+        save_bindings(bindings)
         await interaction.response.send_message(f"bound messages to {channel.mention}", ephemeral=True)
     except ValueError:
         await interaction.response.send_message("lol you gave me a wrong channel id try again", ephemeral=True)
@@ -91,13 +101,15 @@ async def bind(interaction: discord.Interaction, channel_id: str):
 @client.tree.command(name="bindhere", description="bind messages in the channel this command is being sent in")
 async def bindhere(interaction: discord.Interaction):
     try:
+        await interaction.response.defer()
+        bindings = load_bindings()
         channel_id = interaction.channel.id
         bindings[str(interaction.guild.id)] = channel_id
-        with open(BINDINGS_FILE, "w") as f:
-            json.dump(bindings, f)
-        await interaction.response.send_message(f"bound messages to {interaction.channel.mention}", ephemeral=True)
+        save_bindings(bindings)
+        await interaction.followup.send(f"bound messages to {interaction.channel.mention}", ephemeral=True)
     except Exception as e:
-        await interaction.response.send_message(f"it done messed up </3 {e}", ephemeral=True)
+        await interaction.followup.send(f"it done messed up </3 {e}", ephemeral=True)
+
 
 app = Flask(__name__)
 CORS(app)
