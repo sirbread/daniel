@@ -13,7 +13,7 @@ import requests
 load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 BINDINGS_FILE = "bindings.json"
-slack_api_url = "http://localhost:5009/send-slack"
+slack_api_url = "http://192.168.167.121:5009/send-slack"
 
 def load_bindings():
     try:
@@ -31,7 +31,7 @@ intents.guilds = True
 intents.guild_messages = True
 intents.message_content = True
 
-class JarvisClient(discord.Client):
+class Client(discord.Client):
     def __init__(self):
         super().__init__(intents=intents)
         self.tree = app_commands.CommandTree(self)
@@ -43,22 +43,22 @@ class JarvisClient(discord.Client):
         bindings = load_bindings()
         guild = self.get_guild(int(guild_id))
         if not guild:
-            print(f"[ERROR] Guild {guild_id} not found.")
+            print(f"guild {guild_id} not found.")
             return False
         channel_id = bindings.get(str(guild_id))
         if not channel_id:
-            print(f"[ERROR] No bound channel for guild {guild_id}.")
+            print(f"no bound channel for guild {guild_id}.")
             return False
         channel = get(guild.text_channels, id=channel_id)
-        print(f"[DEBUG] Sending to guild={guild_id}, channel={channel_id}, channel_obj={channel}")
+        print(f"sending to guild={guild_id}, channel={channel_id}, channel_obj={channel}")
         if not channel or not channel.permissions_for(guild.me).send_messages:
-            print(f"[ERROR] Channel not found or missing permissions.")
+            print(f"channel not found or missing permissions.")
             return False
         try:
             await channel.send(message)
             return True
         except Exception as e:
-            print(f"[ERROR] Failed to send message: {e}")
+            print(f"failed to send message: {e}")
             return False
 
     def list_servers(self):
@@ -73,40 +73,40 @@ class JarvisClient(discord.Client):
         return servers
 
     async def on_ready(self):
-        print(f"JARVIS active as {self.user}")
+        print(f"jarvis! activate {self.user}")
 
-client = JarvisClient()
+client = Client()
 
-@client.tree.command(name="bind", description="Bind messages to a specific channel ID")
-@app_commands.describe(channel_id="ID of channel to bind to")
+@client.tree.command(name="bind", description="bind messages to a specific channel ID")
+@app_commands.describe(channel_id="id of channel to bind to")
 async def bind(interaction: discord.Interaction, channel_id: str):
     try:
         channel_id = int(channel_id)
         channel = get(interaction.guild.text_channels, id=channel_id)
         print(f"[DEBUG] Binding: guild={interaction.guild.id}, channel={channel_id}, channel_obj={channel}")
         if not channel:
-            await interaction.response.send_message("Channel not found or not a text channel.", ephemeral=True)
+            await interaction.response.send_message("channel not found or not a text channel.", ephemeral=True)
             return
         bindings = load_bindings()
         bindings[str(interaction.guild.id)] = channel_id
         save_bindings(bindings)
-        await interaction.response.send_message(f"Bound messages to {channel.mention}", ephemeral=True)
+        await interaction.response.send_message(f"bound messages to {channel.mention}", ephemeral=True)
     except ValueError:
-        await interaction.response.send_message("Invalid channel ID. Try again!", ephemeral=True)
+        await interaction.response.send_message("invalid channel id idiot", ephemeral=True)
 
-@client.tree.command(name="bindhere", description="Bind messages to the current channel")
+@client.tree.command(name="bindhere", description="bind messages to the current channel")
 async def bindhere(interaction: discord.Interaction):
     try:
         channel = interaction.channel
         if not isinstance(channel, discord.TextChannel):
-            await interaction.response.send_message("This isn't a text channel.", ephemeral=True)
+            await interaction.response.send_message("this isn't a text channel.", ephemeral=True)
             return
         bindings = load_bindings()
         bindings[str(interaction.guild.id)] = channel.id
         save_bindings(bindings)
-        await interaction.response.send_message(f"Bound messages to {channel.mention}", ephemeral=True)
+        await interaction.response.send_message(f"bound messages to {channel.mention}", ephemeral=True)
     except Exception as e:
-        await interaction.response.send_message(f"Failed to bind: {e}", ephemeral=True)
+        await interaction.response.send_message(f"failed to bind: {e}", ephemeral=True)
 
 app = Flask(__name__)
 CORS(app)

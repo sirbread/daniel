@@ -106,7 +106,7 @@
         }
 
         function fetchServers() {
-            fetch('http://localhost:5008/servers')
+            fetch('http://192.168.167.121:5008/servers')
                 .then(response => response.json())
                 .then(servers => {
                     const serverSelect = document.getElementById("server_select");
@@ -131,7 +131,7 @@
                 return;
             }
 
-            fetch('http://localhost:5008/send', {
+            fetch('http://192.168.167.121:5008/send', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
