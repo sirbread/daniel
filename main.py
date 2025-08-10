@@ -17,6 +17,7 @@ slack_api_url = "http://localhost:5009/send-slack"
 if os.path.exists(BINDINGS_FILE):
     with open(BINDINGS_FILE, "r") as f:
         bindings = json.load(f)
+    print("bind found")
 else:
     bindings = {}
 
