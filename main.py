@@ -1,15 +1,17 @@
 import os
-import os
 import discord
 from discord import app_commands
 import asyncio
 import json
 from dotenv import load_dotenv
+from flask import Flask, request, jsonify
+import threading
+
 load_dotenv()
 #don't forgot to push to prod
 token = os.getenv("DISCORD_TOKEN")
 BINDINGS_FILE = "bindings.json"
-print(f"using token: {token}. remember to tell @everyone this string!")
+#print(f"using token: {token}. remember to tell @everyone this string!")
 
 
 if os.path.exists(BINDINGS_FILE):
@@ -30,15 +32,6 @@ class MyClient(discord.Client):
 
     async def setup_hook(self):
         await self.tree.sync()
-        asyncio.create_task(self.console_input())
-
-    async def console_input(self):
-        await self.wait_until_ready()
-        loop = asyncio.get_event_loop()
-        while not self.is_closed():
-            msg = await loop.run_in_executor(None, input, "")
-            if msg.strip():
-                await self.send_to_bound_channels(msg)
 
     async def send_to_bound_channels(self, message):
         for guild in self.guilds:
@@ -50,6 +43,19 @@ class MyClient(discord.Client):
                         await channel.send(message)
                     except:
                         pass
+
+    async def send_to_bound_channel(self, guild_id, message):
+        guild = self.get_guild(int(guild_id))
+        if not guild:
+            return False
+        if str(guild_id) not in bindings:
+            return False
+        channel_id = bindings[str(guild_id)]
+        channel = guild.get_channel(channel_id)
+        if not channel or not channel.permissions_for(guild.me).send_messages:
+            return False
+        await channel.send(message)
+        return True
 
     async def on_ready(self):
         print(f"JARVIS! activate {self.user}")
@@ -84,5 +90,30 @@ async def bindhere(interaction: discord.Interaction):
     except Exception as e:
         await interaction.response.send_message(f"it done messed up </3 {e}", ephemeral=True)
 
+#doesn't this like hold water why is it in my code
+app = Flask(__name__)
+
+@app.route("/send", methods=["POST"])
+def send_message():
+    auth = request.headers.get("Authorization")
+    if auth != API_KEY:
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    data = request.get_json()
+    guild_id = data.get("guild_id")
+    message = data.get("message")
+    if not guild_id or not message:
+        return jsonify({"error": "guild_id and message required"}), 400
+    
+    asyncio.run_coroutine_threadsafe(
+        client.send_to_bound_channel(guild_id, message),
+        client.loop
+    )
+    return jsonify({"status": "ok"})
+
+def run_flask():
+    app.run(host="0.0.0.0", port=5008) #all these ports taken on the prem wifi sob 
+
+threading.Thread(target=run_flask, daemon=True).start()
 
 client.run(token)
