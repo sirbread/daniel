@@ -7,13 +7,12 @@ from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS 
 import threading
+import requests
 
 load_dotenv()
-#don't forgot to push to prod
 token = os.getenv("DISCORD_TOKEN")
 BINDINGS_FILE = "bindings.json"
-#print(f"using token: {token}. remember to tell @everyone this string!")
-
+slack_api_url = "http://localhost:5009/send-slack"
 
 if os.path.exists(BINDINGS_FILE):
     with open(BINDINGS_FILE, "r") as f:
@@ -72,8 +71,7 @@ class MyClient(discord.Client):
         print(f"JARVIS! activate {self.user}")
 
 client = MyClient()
-#lot of this was taken from sirbread/prox3 
-#thank you old me (also fuck you old me) 
+
 @client.tree.command(name="bind", description="bind messages to a specific channel id")
 @app_commands.describe(channel_id="id of channel to bind to")
 async def bind(interaction: discord.Interaction, channel_id: str):
@@ -101,7 +99,6 @@ async def bindhere(interaction: discord.Interaction):
     except Exception as e:
         await interaction.response.send_message(f"it done messed up </3 {e}", ephemeral=True)
 
-#doesn't this like hold water why is it in my code
 app = Flask(__name__)
 CORS(app)
 
@@ -116,19 +113,30 @@ def send_message():
     message = data.get("message")
     if not guild_id or not message:
         return jsonify({"error": "guild_id and message required"}), 400
-    
-    asyncio.run_coroutine_threadsafe(
+
+    fut = asyncio.run_coroutine_threadsafe(
         client.send_to_bound_channel(guild_id, message),
         client.loop
     )
-    return jsonify({"status": "ok"})
+    discord_result = fut.result()
+
+    try:
+        slack_resp = requests.post(slack_api_url, json={"text": message})
+        slack_data = slack_resp.json()
+    except Exception as e:
+        slack_data = {"error": str(e)}
+
+    return jsonify({
+        "discord_result": discord_result,
+        "slack_result": slack_data
+    })
 
 @app.route("/servers", methods=["GET"])
 def list_servers():
     return jsonify(client.list_servers())
 
 def run_flask():
-    app.run(host="0.0.0.0", port=5008) #all these ports taken on the prem wifi sob 
+    app.run(host="0.0.0.0", port=5008)
 
 threading.Thread(target=run_flask, daemon=True).start()
 

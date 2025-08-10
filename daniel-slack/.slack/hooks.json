@@ -1,0 +1,22 @@
+{
+  "hooks": {
+    "get-manifest": "cmd /c \"C:\\Users\\maxsr\\OneDrive\\Desktop\\Shipwrecked\\daniel\\daniel\\daniel-slack\\.venv\\Scripts\\python.exe -m slack_cli_hooks.hooks.get_manifest\"",
+    "start": "cmd /c \"C:\\Users\\maxsr\\OneDrive\\Desktop\\Shipwrecked\\daniel\\daniel\\daniel-slack\\.venv\\Scripts\\python.exe -X dev -m slack_cli_hooks.hooks.start\"",
+    "check-update": "cmd /c \"C:\\Users\\maxsr\\OneDrive\\Desktop\\Shipwrecked\\daniel\\daniel\\daniel-slack\\.venv\\Scripts\\python.exe -m slack_cli_hooks.hooks.check_update\"",
+    "doctor": "cmd /c \"C:\\Users\\maxsr\\OneDrive\\Desktop\\Shipwrecked\\daniel\\daniel\\daniel-slack\\.venv\\Scripts\\python.exe -m slack_cli_hooks.hooks.doctor\""
+  },
+  "config": {
+    "watch": {
+      "filter-regex": "(^manifest\\.json$)",
+      "paths": [
+        "."
+      ]
+    },
+    "protocol-version": [
+      "message-boundaries",
+      "default"
+    ],
+    "sdk-managed-connection-enabled": true
+  },
+  "runtime": "python"
+}

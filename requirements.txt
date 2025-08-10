@@ -1,2 +1,5 @@
 discord
 dotenv
+flask
+flask-cors
+requests
