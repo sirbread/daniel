@@ -57,6 +57,16 @@ class MyClient(discord.Client):
         await channel.send(message)
         return True
 
+    def list_servers(self):
+        return [
+            {
+                "id": str(g.id),
+                "name": g.name,
+                "bound_channel": bindings.get(str(g.id))
+            }
+            for g in self.guilds
+        ]
+
     async def on_ready(self):
         print(f"JARVIS! activate {self.user}")
 
@@ -95,10 +105,6 @@ app = Flask(__name__)
 
 @app.route("/send", methods=["POST"])
 def send_message():
-    auth = request.headers.get("Authorization")
-    if auth != API_KEY:
-        return jsonify({"error": "Unauthorized"}), 403
-    
     data = request.get_json()
     guild_id = data.get("guild_id")
     message = data.get("message")
@@ -110,6 +116,10 @@ def send_message():
         client.loop
     )
     return jsonify({"status": "ok"})
+
+@app.route("/servers", methods=["GET"])
+def list_servers():
+    return jsonify(client.list_servers())
 
 def run_flask():
     app.run(host="0.0.0.0", port=5008) #all these ports taken on the prem wifi sob 
