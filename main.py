@@ -8,10 +8,12 @@ from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS 
 import threading
 from discord.utils import get
+import requests
 
 load_dotenv()
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 BINDINGS_FILE = "bindings.json"
+slack_api_url = "http://localhost:5009/send-slack"
 
 def load_bindings():
     try:
@@ -127,8 +129,15 @@ def send_message():
     )
     discord_result = fut.result()
 
+    try:
+        slack_resp = requests.post(slack_api_url, json={"text": message})
+        slack_data = slack_resp.json()
+    except Exception as e:
+        slack_data = {"error": str(e)}
+
     return jsonify({
-        "discord_result": discord_result
+        "discord_result": discord_result,
+        "slack_result": slack_data
     })
 
 @app.route("/servers", methods=["GET"])
