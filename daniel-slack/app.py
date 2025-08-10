@@ -2,7 +2,9 @@ import os
 from flask import Flask, request, jsonify
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
+import dotenv
 
+dotenv.load_dotenv()
 SLACK_BOT_TOKEN = os.environ.get("SLACK_BOT_TOKEN")
 client = WebClient(token=SLACK_BOT_TOKEN)
 
