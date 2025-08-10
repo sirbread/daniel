@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>daniel</title>
+</head>
+<body>
+
+    <div class="container">
+        <h1>JARVIS! meet daniel</h1>
+
+        <label for="server_select">Select Server:</label>
+        <select id="server_select" class="input-field">
+            <option value="">-- Select a server --</option>
+        </select>
+
+        <label for="message">Message:</label>
+        <textarea id="message" class="input-field" placeholder="Enter message" rows="4"></textarea>
+
+        <button onclick="sendMessage()">Send Message</button>
+
+        <div id="response" class="response"></div>
+    </div>
+
+    <script>
+        window.onload = function() {
+            fetchServers();
+        }
+
+        function fetchServers() {
+            fetch('http://localhost:5008/servers')
+                .then(response => response.json())
+                .then(servers => {
+                    const serverSelect = document.getElementById("server_select");
+                    servers.forEach(server => {
+                        const option = document.createElement("option");
+                        option.value = server.id;
+                        option.textContent = server.name;
+                        serverSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching servers:', error);
+                });
+        }
+
+        function sendMessage() {
+            const guildId = document.getElementById("server_select").value;
+            const message = document.getElementById("message").value;
+            
+            if (!guildId || !message) {
+                alert("where u sending to?? select server pls");
+                return;
+            }
+
+            fetch('http://localhost:5008/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    guild_id: guildId,
+                    message: message
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("response").textContent = `status: ${data.status || 'message sent'}`;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById("response").textContent = 'message failed ot send';
+            });
+        }
+    </script>
+
+</body>
+</html>

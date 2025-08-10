@@ -91,13 +91,15 @@ async def bind(interaction: discord.Interaction, channel_id: str):
 @client.tree.command(name="bindhere", description="bind messages in the channel this command is being sent in")
 async def bindhere(interaction: discord.Interaction):
     try:
+        await interaction.response.defer()
         channel_id = interaction.channel.id
         bindings[str(interaction.guild.id)] = channel_id
         with open(BINDINGS_FILE, "w") as f:
             json.dump(bindings, f)
-        await interaction.response.send_message(f"bound messages to {interaction.channel.mention}", ephemeral=True)
+        await interaction.followup.send(f"bound messages to {interaction.channel.mention}", ephemeral=True)
     except Exception as e:
-        await interaction.response.send_message(f"it done messed up </3 {e}", ephemeral=True)
+        await interaction.followup.send(f"it done messed up </3 {e}", ephemeral=True)
+
 
 app = Flask(__name__)
 CORS(app)
