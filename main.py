@@ -7,21 +7,18 @@ from dotenv import load_dotenv
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS 
 import threading
-import requests
+from discord.utils import get
 
 load_dotenv()
-token = os.getenv("DISCORD_TOKEN")
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 BINDINGS_FILE = "bindings.json"
-slack_api_url = "http://localhost:5009/send-slack"
 
 def load_bindings():
-    if os.path.exists(BINDINGS_FILE):
+    try:
         with open(BINDINGS_FILE, "r") as f:
-            try:
-                return json.load(f)
-            except json.JSONDecodeError:
-                return {}
-    return {}
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
 
 def save_bindings(bindings):
     with open(BINDINGS_FILE, "w") as f:
@@ -32,7 +29,7 @@ intents.guilds = True
 intents.guild_messages = True
 intents.message_content = True
 
-class MyClient(discord.Client):
+class JarvisClient(discord.Client):
     def __init__(self):
         super().__init__(intents=intents)
         self.tree = app_commands.CommandTree(self)
@@ -40,76 +37,74 @@ class MyClient(discord.Client):
     async def setup_hook(self):
         await self.tree.sync()
 
-    async def send_to_bound_channels(self, message):
-        bindings = load_bindings()
-        for guild in self.guilds:
-            if str(guild.id) in bindings:
-                channel_id = bindings[str(guild.id)]
-                channel = guild.get_channel(channel_id)
-                if channel and channel.permissions_for(guild.me).send_messages:
-                    try:
-                        await channel.send(message)
-                    except:
-                        pass
-
     async def send_to_bound_channel(self, guild_id, message):
         bindings = load_bindings()
         guild = self.get_guild(int(guild_id))
         if not guild:
+            print(f"[ERROR] Guild {guild_id} not found.")
             return False
-        if str(guild_id) not in bindings:
+        channel_id = bindings.get(str(guild_id))
+        if not channel_id:
+            print(f"[ERROR] No bound channel for guild {guild_id}.")
             return False
-        channel_id = bindings[str(guild_id)]
-        channel = guild.get_channel(channel_id)
+        channel = get(guild.text_channels, id=channel_id)
+        print(f"[DEBUG] Sending to guild={guild_id}, channel={channel_id}, channel_obj={channel}")
         if not channel or not channel.permissions_for(guild.me).send_messages:
+            print(f"[ERROR] Channel not found or missing permissions.")
             return False
-        await channel.send(message)
-        return True
+        try:
+            await channel.send(message)
+            return True
+        except Exception as e:
+            print(f"[ERROR] Failed to send message: {e}")
+            return False
 
     def list_servers(self):
         bindings = load_bindings()
-        return [
-            {
+        servers = []
+        for g in self.guilds:
+            servers.append({
                 "id": str(g.id),
                 "name": g.name,
                 "bound_channel": bindings.get(str(g.id))
-            }
-            for g in self.guilds
-        ]
+            })
+        return servers
 
     async def on_ready(self):
-        print(f"JARVIS! activate {self.user}")
+        print(f"JARVIS active as {self.user}")
 
-client = MyClient()
+client = JarvisClient()
 
-@client.tree.command(name="bind", description="bind messages to a specific channel id")
-@app_commands.describe(channel_id="id of channel to bind to")
+@client.tree.command(name="bind", description="Bind messages to a specific channel ID")
+@app_commands.describe(channel_id="ID of channel to bind to")
 async def bind(interaction: discord.Interaction, channel_id: str):
     try:
         channel_id = int(channel_id)
-        channel = interaction.guild.get_channel(channel_id)
+        channel = get(interaction.guild.text_channels, id=channel_id)
+        print(f"[DEBUG] Binding: guild={interaction.guild.id}, channel={channel_id}, channel_obj={channel}")
         if not channel:
-            await interaction.response.send_message("lol channel not found", ephemeral=True)
+            await interaction.response.send_message("Channel not found or not a text channel.", ephemeral=True)
             return
         bindings = load_bindings()
         bindings[str(interaction.guild.id)] = channel_id
         save_bindings(bindings)
-        await interaction.response.send_message(f"bound messages to {channel.mention}", ephemeral=True)
+        await interaction.response.send_message(f"Bound messages to {channel.mention}", ephemeral=True)
     except ValueError:
-        await interaction.response.send_message("lol you gave me a wrong channel id try again", ephemeral=True)
+        await interaction.response.send_message("Invalid channel ID. Try again!", ephemeral=True)
 
-@client.tree.command(name="bindhere", description="bind messages in the channel this command is being sent in")
+@client.tree.command(name="bindhere", description="Bind messages to the current channel")
 async def bindhere(interaction: discord.Interaction):
     try:
-        await interaction.response.defer()
+        channel = interaction.channel
+        if not isinstance(channel, discord.TextChannel):
+            await interaction.response.send_message("This isn't a text channel.", ephemeral=True)
+            return
         bindings = load_bindings()
-        channel_id = interaction.channel.id
-        bindings[str(interaction.guild.id)] = channel_id
+        bindings[str(interaction.guild.id)] = channel.id
         save_bindings(bindings)
-        await interaction.followup.send(f"bound messages to {interaction.channel.mention}", ephemeral=True)
+        await interaction.response.send_message(f"Bound messages to {channel.mention}", ephemeral=True)
     except Exception as e:
-        await interaction.followup.send(f"it done messed up </3 {e}", ephemeral=True)
-
+        await interaction.response.send_message(f"Failed to bind: {e}", ephemeral=True)
 
 app = Flask(__name__)
 CORS(app)
@@ -132,15 +127,8 @@ def send_message():
     )
     discord_result = fut.result()
 
-    try:
-        slack_resp = requests.post(slack_api_url, json={"text": message})
-        slack_data = slack_resp.json()
-    except Exception as e:
-        slack_data = {"error": str(e)}
-
     return jsonify({
-        "discord_result": discord_result,
-        "slack_result": slack_data
+        "discord_result": discord_result
     })
 
 @app.route("/servers", methods=["GET"])
@@ -150,6 +138,6 @@ def list_servers():
 def run_flask():
     app.run(host="0.0.0.0", port=5008)
 
-threading.Thread(target=run_flask, daemon=True).start()
-
-client.run(token)
+if __name__ == "__main__":
+    threading.Thread(target=run_flask, daemon=True).start()
+    client.run(DISCORD_TOKEN)
